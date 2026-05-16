@@ -1,35 +1,60 @@
 # Welcome to My Basecamp 1
-***
 
 ## Task
-Building a simple Basecamp-style project management app where users can register, log in, and manage their own projects. The challenge is handling user roles (admin vs regular), secure authentication, and clean session management.
+A web-based project management tool inspired by Basecamp. The challenge is to build a full-stack application with user authentication, role-based permissions, and project management features.
 
 ## Description
-The problem is solved using Node.js with Express for routing, EJS for server-side templating, Sequelize ORM with SQLite for data persistence, and bcrypt for password hashing. Sessions are managed via express-session, and middleware handles role-based access control.
+Built with Node.js and Express on the backend, PostgreSQL as the database, and Prisma as the ORM. The app supports user registration, login/logout with sessions, admin roles, and full project CRUD.
 
 ## Installation
-To install the project, make sure you have Node.js installed on your machine. Then clone the repository and navigate into the project directory. Run the following command to install all required dependencies listed in package.json:
 
+1. Clone the repository:
+```
+git clone https://git.us.qwasar.io/my_basecamp_1_205948_ykgplx/my_basecamp_1.git
+cd my_basecamp_1
+```
+
+2. Install dependencies:
 ```
 npm install
 ```
 
-This will install Express, EJS, Sequelize, SQLite3, bcrypt, and express-session automatically.
+3. Create a `.env` file in the root directory:
+```
+PORT=3000
+DATABASE_URL="postgresql://postgres:yourpassword@localhost:5432/mybasecamp"
+SESSION_SECRET=anyrandomstring
+```
+4. Run Prisma migration to create the tables:
+```
+npx prisma migrate dev
+```
+5. Start the server:
+```
+npm run dev
+```
 
 ## Usage
-To start the application, run the following command from the root of the project directory:
 
-```
-npm start
-```
+The server runs on `http://localhost:3000`
 
-Once the server is running, openb your browser and navigate to http://localhost:3000. You can register a new account or log in using the default admin credentials (admin@admin.com / admin123). Regular users can create, view, edit, and delete their own projects. Admin users can view all registered users and grant or revoke admin privileges.
-```
-./my_project argument1 argument2
-```
+**User endpoints:**
+- `POST /users` — register a new user
+- `GET /users/:id` — get a user by id
+- `DELETE /users/:id` — delete a user (admin only)
+- `PUT /users/:id/admin` — promote user to admin (admin only)
+- `PUT /users/:id/removeadmin` — demote admin to user (admin only)
 
-### The Core Team
-liyeva_x azizova_n
+**Session endpoints:**
+- `POST /session` — login
+- `DELETE /session` — logout
 
-<span><i>Made at <a href='https://qwasar.io'>Qwasar SV -- Software Engineering School</a></i></span>
-<span><img alt='Qwasar SV -- Software Engineering School's Logo' src='https://storage.googleapis.com/qwasar-public/qwasar-logo_50x50.png' width='20px' /></span>
+**Project endpoints:**
+- `POST /projects` — create a project
+- `GET /projects` — get all projects
+- `GET /projects/:id` — get a project by id
+- `PUT /projects/:id` — update a project
+- `DELETE /projects/:id` — delete a project
+
+## The Core Team
+Made at Qwasar SV -- Software Engineering School <img alt='Qwasar SV -- Software Engineering School's Logo' src='https://storage.googleapis.com/qwasar-public/qwasar-logo_50x50.png' width='20px' />
