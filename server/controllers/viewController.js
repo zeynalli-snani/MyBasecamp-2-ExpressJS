@@ -34,7 +34,7 @@ const handleLogin = async (req, res) => {
     return res.render("login", { errors: [{ msg: "Invalid credentials" }], message: "" });
   }
   req.session.user = user;
-  res.redirect("/projects");
+  res.redirect(user.role === "admin" ? "/admin" : "/projects");
 };
 
 const renderProjects = (req, res) => {

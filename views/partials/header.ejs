@@ -9,8 +9,16 @@
     <nav id="navbar">
       <h2>MyBaseCamp</h2>
       <div>
-        <a href="/projects">Projects</a>
-        <a href="/logout">Sign Out</a>
+        <% if (typeof user !== "undefined" && user) { %>
+          <a href="/projects">Projects</a>
+          <% if (user.role === "admin") { %>
+            <a href="/admin">Admin</a>
+          <% } %>
+          <a href="/logout">Sign Out</a>
+        <% } else { %>
+          <a href="/login">Login</a>
+          <a href="/register">Register</a>
+        <% } %>
       </div>
     </nav>
   </body>

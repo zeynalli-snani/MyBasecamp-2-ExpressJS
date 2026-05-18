@@ -24,6 +24,11 @@ app.use(
   }),
 );
 
+app.use((req, res, next) => {
+  res.locals.user = req.session.user || null;
+  next();
+});
+
 app.use("/", viewRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/session", sessionRoutes);
