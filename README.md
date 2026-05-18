@@ -56,5 +56,10 @@ The server runs on `http://localhost:3000`
 - `PUT /projects/:id` — update a project
 - `DELETE /projects/:id` — delete a project
 
+- run `prisma/seed.js` to create an admin user (admin@test.com : admin123) or manually register a user, then in psql:
+```
+UPDATE "User" SET role = 'admin' WHERE email = 'admin@test.com';
+```
+
 ## The Core Team
 Made at Qwasar SV -- Software Engineering School <img alt='Qwasar SV -- Software Engineering School's Logo' src='https://storage.googleapis.com/qwasar-public/qwasar-logo_50x50.png' width='20px' />
