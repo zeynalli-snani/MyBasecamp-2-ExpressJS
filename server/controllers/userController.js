@@ -45,8 +45,29 @@ const getUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    await User.deleteUser(req.params.id);
+    await User.deleteUserWithProjects(req.params.id);
     res.json({ message: "User deleted successfully" });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const deleteCurrentUser = async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    await User.deleteUserWithProjects(userId);
+
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Account deleted, but failed to clear session" });
+      }
+
+      res.clearCookie("connect.sid");
+      res.json({ message: "Your account has been deleted successfully" });
+    });
   } catch (err) {
     if (err.code === "P2025") {
       return res.status(404).json({ error: "User not found" });
@@ -84,6 +105,7 @@ module.exports = {
   getAllUsers,
   getUser,
   deleteUser,
+  deleteCurrentUser,
   setAdmin,
   removeAdmin,
 };

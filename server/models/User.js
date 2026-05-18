@@ -34,6 +34,21 @@ const deleteUser = async (id) => {
   return true
 }
 
+const deleteUserWithProjects = async (id) => {
+  const userId = parseInt(id)
+
+  await prisma.$transaction([
+    prisma.project.deleteMany({
+      where: { ownerId: userId }
+    }),
+    prisma.user.delete({
+      where: { id: userId }
+    })
+  ])
+
+  return true
+}
+
 const setAdmin = async (id) => {
   return await prisma.user.update({
     where: { id: parseInt(id) },
@@ -48,4 +63,4 @@ const removeAdmin = async (id) => {
   })
 }
 
-module.exports = { createUser, findUserByEmail, findUserById, getAllUsers, deleteUser, setAdmin, removeAdmin }
+module.exports = { createUser, findUserByEmail, findUserById, getAllUsers, deleteUser, deleteUserWithProjects, setAdmin, removeAdmin }

@@ -194,6 +194,21 @@ textarea {
   background: #dc2626;
 }
 
+.danger-zone {
+  margin-top: 2rem;
+  border: 1px solid #fecaca;
+  background: #fff7f7;
+}
+
+.danger-zone h2 {
+  margin-bottom: 0.5rem;
+}
+
+.danger-zone p {
+  color: #991b1b;
+  margin-bottom: 1rem;
+}
+
 .table-container {
   width: 100%;
   overflow-x: auto;

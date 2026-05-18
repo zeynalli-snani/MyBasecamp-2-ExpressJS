@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { createUser, getAllUsers, getUser, deleteUser, setAdmin, removeAdmin } = require('../controllers/userController.js')
+const { createUser, getAllUsers, getUser, deleteUser, deleteCurrentUser, setAdmin, removeAdmin } = require('../controllers/userController.js')
 const auth = require('../middleware/auth.js')
 const admin = require('../middleware/admin.js')
 const { body } = require('express-validator')
@@ -30,6 +30,7 @@ const registerValidation = [
 
 router.post('/', registerValidation, createUser)
 router.get('/', auth, admin, getAllUsers)               
+router.delete('/me', auth, deleteCurrentUser)
 router.get('/:id', auth, getUser)                     
 router.delete('/:id', auth, admin, deleteUser)        
 router.put('/:id/admin', auth, admin, setAdmin)            

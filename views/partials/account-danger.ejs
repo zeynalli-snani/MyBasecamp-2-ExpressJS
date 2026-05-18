@@ -1,0 +1,27 @@
+<section class="card danger-zone">
+  <h2>Delete Account</h2>
+  <p>This permanently deletes your account and all projects you own.</p>
+  <button type="button" class="btn-danger" onclick="deleteMyAccount()">
+    Delete My Account
+  </button>
+</section>
+
+<script>
+  async function deleteMyAccount() {
+    const confirmed = confirm(
+      "Delete your account permanently? This will also remove all of your projects.",
+    );
+
+    if (!confirmed) return;
+
+    const res = await fetch("/api/users/me", { method: "DELETE" });
+
+    if (res.ok) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const data = await res.json();
+    alert(data.error || "Failed to delete account");
+  }
+</script>
