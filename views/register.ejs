@@ -1,0 +1,34 @@
+<%- include('partials/header') %>
+
+  <main>
+    <h1>Register</h1>
+
+    <% if (message) { %>
+      <p class="success"><%= message %></p>
+    <% } %>
+
+    <% if (errors.length > 0) { %>
+      <ul class="errors">
+        <% errors.forEach(e => { %>
+          <li><%= e.msg %></li>
+        <% }) %>
+      </ul>
+    <% } %>
+
+    <form action="/register" method="POST">
+      <label>Name</label>
+      <input type="text" name="name" placeholder="Your name" />
+
+      <label>Email</label>
+      <input type="email" name="email" placeholder="you@example.com" />
+
+      <label>Password</label>
+      <input type="password" name="password" placeholder="Min 8 characters" />
+
+      <button type="submit">Create Account</button>
+    </form>
+
+    <p>Already have an account? <a href="/login">Login</a></p>
+  </main>
+</body>
+</html>

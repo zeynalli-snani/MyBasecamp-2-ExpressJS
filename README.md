@@ -10,7 +10,7 @@ Built with Node.js and Express on the backend, PostgreSQL as the database, and P
 
 1. Clone the repository:
 ```
-git clone https://git.us.qwasar.io/my_basecamp_1_205948_ykgplx/my_basecamp_1.git
+git clone https://git.us.qwasar.io/my_basecamp_1_213017_xdakrh/my_basecamp_1.git
 cd my_basecamp_1
 ```
 
