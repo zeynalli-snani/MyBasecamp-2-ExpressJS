@@ -41,6 +41,10 @@ const renderProjects = (req, res) => {
   res.render("projects", { user: req.session.user });
 };
 
+const renderProject = (req, res) => {
+  res.render("project", { user: req.session.user, projectId: req.params.id });
+};
+
 const renderAdmin = (req, res) => {
   res.render("admin", { user: req.session.user });
 };
@@ -57,6 +61,7 @@ module.exports = {
   renderLogin,
   handleLogin,
   renderProjects,
+  renderProject,
   renderAdmin,
   logout
 };

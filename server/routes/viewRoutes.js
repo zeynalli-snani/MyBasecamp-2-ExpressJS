@@ -13,6 +13,7 @@ router.post("/login", viewController.handleLogin);
 router.get("/logout", viewController.logout);
 
 router.get("/projects", auth, viewController.renderProjects);
+router.get("/projects/:id", auth, viewController.renderProject);
 router.get("/admin", auth, admin, viewController.renderAdmin);
 
 module.exports = router;
