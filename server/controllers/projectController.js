@@ -109,7 +109,7 @@ const addMember = async (req, res) => {
   try {
     const projectId = req.params.id;
     const userId = getCurrentUserId(req);
-    const memberId = req.body.userId;
+    const { userId: memberUserId, email } = req.body;
 
     const project = await loadProjectOr404(projectId, res);
     if (!project) return;
@@ -119,16 +119,16 @@ const addMember = async (req, res) => {
       return res.status(403).json({ error: "Only the project admin can manage members" });
     }
 
-    if (!memberId) {
-      return res.status(400).json({ error: "User id is required" });
+    if (!memberUserId && !email) {
+      return res.status(400).json({ error: "User id or email is required" });
     }
 
-    const user = await User.findUserById(memberId);
+    const user = memberUserId ? await User.findUserById(memberUserId) : await User.findUserByEmail(email);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const member = await Project.addProjectMember(projectId, memberId);
+    const member = await Project.addProjectMember(projectId, user.id);
     res.status(201).json(member);
   } catch (err) {
     if (err.code === "P2002") {
@@ -203,6 +203,11 @@ const createAttachment = async (req, res) => {
     const { name, format, link } = req.body;
     if (!name || !format) {
       return res.status(400).json({ error: "Name and format are required" });
+    }
+
+    const supportedFormats = ["png", "jpg", "pdf", "txt"];
+    if (!supportedFormats.includes(format.toLowerCase())) {
+      return res.status(400).json({ error: "Format must be png, jpg, pdf, or txt" });
     }
 
     const attachment = await Attachment.createAttachment(projectId, userId, name, format, link);

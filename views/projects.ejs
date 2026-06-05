@@ -1,74 +1,94 @@
 <%- include('partials/header') %>
 
-    <main class="projects-page">
-      <div class="projects-header">
-        <h1>My Projects</h1>
+<main class="projects-page">
+  <div class="projects-header">
+    <div>
+      <h1>My Projects</h1>
+      <p>Projects you own or belong to are shown here.</p>
+    </div>
+    <button
+      onclick="document.getElementById('new-project-form').style.display = 'block'"
+      class="btn"
+    >
+      + New Project
+    </button>
+  </div>
+
+  <div id="new-project-form" style="display: none" class="card">
+    <h2>New Project</h2>
+    <form onsubmit="createProject(event)">
+      <label>Project Name</label>
+      <input
+        type="text"
+        id="proj-name"
+        placeholder="e.g. Website Redesign"
+        required
+      />
+      <label>Description</label>
+      <textarea
+        id="proj-desc"
+        placeholder="What's this project about?"
+      ></textarea>
+      <div style="display: flex; gap: 0.5rem">
+        <button type="submit" class="btn">Create</button>
         <button
-          onclick="
-            document.getElementById('new-project-form').style.display = 'block'
-          "
-          class="btn"
+          type="button"
+          onclick="document.getElementById('new-project-form').style.display = 'none'"
+          class="btn-outline"
         >
-          + New Project
+          Cancel
         </button>
       </div>
+    </form>
+  </div>
 
-      <div id="new-project-form" style="display: none" class="card">
-        <h2>New Project</h2>
-        <form onsubmit="createProject(event)">
-          <label>Project Name</label>
-          <input
-            type="text"
-            id="proj-name"
-            placeholder="e.g. Website Redesign"
-            required
-          />
-          <label>Description</label>
-          <textarea
-            id="proj-desc"
-            placeholder="What's this project about?"
-          ></textarea>
-          <div style="display: flex; gap: 0.5rem">
-            <button type="submit" class="btn">Create</button>
-            <button
-              type="button"
-              onclick="
-                document.getElementById('new-project-form').style.display =
-                  'none'
-              "
-              class="btn-outline"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
+  <div id="projects-list"></div>
 
-      <div id="projects-list"></div>
+  <%- include("partials/account-danger") %>
+</main>
 
-      <%- include("partials/account-danger") %>
-    </main>
+<script>
+  const escapeHtml = (value) =>
+    String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
 
-    <script>
-      async function loadProjects() {
-        const res = await fetch("/api/projects");
-        const data = await res.json();
-        const list = document.getElementById("projects-list");
-        if (!data.length) {
-          list.innerHTML =
-            '<p style="color:#999;text-align:center;margin-top:2rem;">No projects yet. Create your first one!</p>';
-          return;
-        }
-        list.innerHTML = data
-          .map(
-            (p) => `
-  <div class="card" id="project-${p.id}">
-    <div id="view-mode-${p.id}" style="display:flex; justify-content:space-between; align-items:start;">
+  async function loadProjects() {
+    const res = await fetch("/api/projects");
+    const data = await res.json();
+    const list = document.getElementById("projects-list");
+
+    if (!res.ok) {
+      list.innerHTML = `<div class="card"><p>${escapeHtml(data.error || "Unable to load projects.")}</p></div>`;
+      return;
+    }
+
+    if (!data.length) {
+      list.innerHTML =
+        '<p style="color:#999;text-align:center;margin-top:2rem;">No projects yet. Create your first one!</p>';
+      return;
+    }
+
+    list.innerHTML = data
+      .map(
+        (p) => `
+  <div class="card project-list-card" id="project-${p.id}">
+    <div id="view-mode-${p.id}" class="project-list-top">
       <div>
-        <h2>${p.name}</h2>
-        <p>${p.description || "No description"}</p>
+        <h2>${escapeHtml(p.name)}</h2>
+        <p>${escapeHtml(p.description || "No description")}</p>
+        <div class="project-meta">
+          <span>Owner: ${escapeHtml(p.owner?.name || "Unknown")}</span>
+          <span>${p.members?.length || 0} member${(p.members?.length || 0) === 1 ? "" : "s"}</span>
+          <span>${p.attachments?.length || 0} attachment${(p.attachments?.length || 0) === 1 ? "" : "s"}</span>
+          <span>${p.threads?.length || 0} thread${(p.threads?.length || 0) === 1 ? "" : "s"}</span>
+        </div>
       </div>
-      <div style="display:flex; gap:0.5rem;">
+      <div class="project-card-actions">
+        <a href="/projects/${p.id}" class="btn-outline">Open</a>
         <button onclick="toggleEdit(${p.id})" class="btn-outline">Edit</button>
         <button onclick="deleteProject(${p.id})" class="btn-danger">Delete</button>
       </div>
@@ -76,9 +96,9 @@
 
     <div id="edit-mode-${p.id}" style="display:none;">
       <label>Project Name</label>
-      <input type="text" id="edit-name-${p.id}" value="${p.name}" class="input-field" style="width:100%; margin-bottom:10px;">
+      <input type="text" id="edit-name-${p.id}" value="${escapeHtml(p.name)}" class="input-field" style="width:100%; margin-bottom:10px;">
       <label>Description</label>
-      <textarea id="edit-desc-${p.id}" class="input-field" style="width:100%; margin-bottom:10px;">${p.description || ""}</textarea>
+      <textarea id="edit-desc-${p.id}" class="input-field" style="width:100%; margin-bottom:10px;">${escapeHtml(p.description || "")}</textarea>
       <div style="display:flex; gap:0.5rem;">
         <button onclick="saveUpdate(${p.id})" class="btn">Save Changes</button>
         <button onclick="toggleEdit(${p.id})" class="btn-outline">Cancel</button>
@@ -86,60 +106,62 @@
     </div>
   </div>
 `,
-          )
-          .join("");
-      }
+      )
+      .join("");
+  }
 
-      async function createProject(e) {
-        e.preventDefault();
-        const name = document.getElementById("proj-name").value;
-        const description = document.getElementById("proj-desc").value;
-        await fetch("/api/projects", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, description }),
-        });
-        document.getElementById("new-project-form").style.display = "none";
-        loadProjects();
-      }
+  async function createProject(e) {
+    e.preventDefault();
+    const name = document.getElementById("proj-name").value;
+    const description = document.getElementById("proj-desc").value;
+    await fetch("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, description }),
+    });
+    document.getElementById("new-project-form").style.display = "none";
+    e.target.reset();
+    loadProjects();
+  }
 
-      async function deleteProject(id) {
-        await fetch(`/api/projects/${id}`, { method: "DELETE" });
-        loadProjects();
-      }
+  async function deleteProject(id) {
+    if (!confirm("Delete this project and everything inside it?")) return;
+    await fetch(`/api/projects/${id}`, { method: "DELETE" });
+    loadProjects();
+  }
 
-      function toggleEdit(id) {
-        const viewDiv = document.getElementById(`view-mode-${id}`);
-        const editDiv = document.getElementById(`edit-mode-${id}`);
+  function toggleEdit(id) {
+    const viewDiv = document.getElementById(`view-mode-${id}`);
+    const editDiv = document.getElementById(`edit-mode-${id}`);
 
-        if (viewDiv.style.display === "none") {
-          viewDiv.style.display = "flex";
-          editDiv.style.display = "none";
-        } else {
-          viewDiv.style.display = "none";
-          editDiv.style.display = "block";
-        }
-      }
+    if (viewDiv.style.display === "none") {
+      viewDiv.style.display = "flex";
+      editDiv.style.display = "none";
+    } else {
+      viewDiv.style.display = "none";
+      editDiv.style.display = "block";
+    }
+  }
 
-      async function saveUpdate(id) {
-        const name = document.getElementById(`edit-name-${id}`).value;
-        const description = document.getElementById(`edit-desc-${id}`).value;
+  async function saveUpdate(id) {
+    const name = document.getElementById(`edit-name-${id}`).value;
+    const description = document.getElementById(`edit-desc-${id}`).value;
 
-        const res = await fetch(`/api/projects/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, description }),
-        });
+    const res = await fetch(`/api/projects/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, description }),
+    });
 
-        if (res.ok) {
-          loadProjects(); 
-        } else {
-          const errorData = await res.json();
-          alert("Update failed: " + (errorData.error || "Unknown error"));
-        }
-      }
-
+    if (res.ok) {
       loadProjects();
-    </script>
-  </body>
+    } else {
+      const errorData = await res.json();
+      alert("Update failed: " + (errorData.error || "Unknown error"));
+    }
+  }
+
+  loadProjects();
+</script>
+</body>
 </html>

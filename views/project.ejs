@@ -1,0 +1,540 @@
+<%- include('partials/header') %>
+
+<main class="project-page">
+  <section class="card project-hero">
+    <div>
+      <p class="eyebrow">Project workspace</p>
+      <h1 id="project-name">Loading project...</h1>
+      <p id="project-description"></p>
+      <div class="project-meta" id="project-meta"></div>
+    </div>
+    <div class="project-hero-actions" id="project-actions"></div>
+  </section>
+
+  <section class="project-grid">
+    <article class="card section-card">
+      <div class="section-head">
+        <h2>Members</h2>
+        <span id="member-count"></span>
+      </div>
+      <div id="members-block"></div>
+    </article>
+
+    <article class="card section-card">
+      <div class="section-head">
+        <h2>Attachments</h2>
+        <span>png, jpg, pdf, txt</span>
+      </div>
+      <div id="attachments-block"></div>
+    </article>
+
+    <article class="card section-card section-card-wide">
+      <div class="section-head">
+        <h2>Threads</h2>
+        <span id="thread-count"></span>
+      </div>
+      <div id="threads-block"></div>
+    </article>
+  </section>
+
+  <div id="project-error" class="card" style="display:none;"></div>
+</main>
+
+<script>
+  const projectId = <%= projectId %>;
+  const currentUserId = <%= user.id %>;
+  const currentUserName = <%- JSON.stringify(user.name) %>;
+
+  const escapeHtml = (value) =>
+    String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const toLines = (value) => escapeHtml(value).replace(/\n/g, "<br>");
+
+  let projectState = null;
+
+  const isProjectAdmin = () =>
+    projectState && projectState.owner && projectState.owner.id === currentUserId;
+
+  const isMember = () =>
+    projectState &&
+    (projectState.owner?.id === currentUserId ||
+      (projectState.members || []).some((member) => member.user.id === currentUserId));
+
+  const showError = (message) => {
+    const errorBox = document.getElementById("project-error");
+    errorBox.style.display = "block";
+    errorBox.innerHTML = `<p>${escapeHtml(message)}</p>`;
+  };
+
+  const hideError = () => {
+    const errorBox = document.getElementById("project-error");
+    errorBox.style.display = "none";
+    errorBox.innerHTML = "";
+  };
+
+  function renderProject(project) {
+    const members = [
+      project.owner,
+      ...(project.members || [])
+        .map((member) => member.user)
+        .filter((member) => member.id !== project.owner.id),
+    ];
+
+    document.getElementById("project-name").textContent = project.name;
+    document.getElementById("project-description").textContent =
+      project.description || "No description provided.";
+    document.getElementById("project-meta").innerHTML = `
+      <span>Owner: ${escapeHtml(project.owner?.name || "Unknown")}</span>
+      <span>${members.length} member${members.length === 1 ? "" : "s"}</span>
+      <span>${project.attachments.length} attachment${project.attachments.length === 1 ? "" : "s"}</span>
+      <span>${project.threads.length} thread${project.threads.length === 1 ? "" : "s"}</span>
+    `;
+
+    document.getElementById("member-count").textContent = `${members.length} people`;
+    document.getElementById("thread-count").textContent = `${project.threads.length} conversations`;
+
+    document.getElementById("project-actions").innerHTML = `
+      <a href="/projects" class="btn-outline">Back to projects</a>
+      ${
+        isProjectAdmin()
+          ? `<button class="btn-danger" onclick="deleteProject()">Delete project</button>`
+          : ""
+      }
+    `;
+
+    renderMembers(project);
+    renderAttachments(project);
+    renderThreads(project);
+  }
+
+  function renderMembers(project) {
+    const members = [
+      project.owner,
+      ...(project.members || [])
+        .map((member) => member.user)
+        .filter((member) => member.id !== project.owner.id),
+    ];
+
+    const membersBlock = document.getElementById("members-block");
+    membersBlock.innerHTML = `
+      <div class="member-list">
+        ${members
+          .map(
+            (member) => `
+          <div class="member-row">
+            <div>
+              <strong>${escapeHtml(member.name)}</strong>
+              <p>${escapeHtml(member.email)}</p>
+            </div>
+            <div class="member-row-actions">
+              <span class="badge ${member.id === project.owner.id ? "admin" : "user"}">
+                ${member.id === project.owner.id ? "owner" : "member"}
+              </span>
+              ${
+                isProjectAdmin() && member.id !== project.owner.id
+                  ? `<button class="btn-danger-small" onclick="removeMember(${member.id})">Remove</button>`
+                  : ""
+              }
+            </div>
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+
+      ${
+        isProjectAdmin()
+          ? `
+      <form class="stack-form" onsubmit="addMember(event)">
+        <label>Add member by email</label>
+        <input id="member-email" type="email" placeholder="teammate@example.com" required />
+        <button class="btn" type="submit">Add member</button>
+      </form>
+      `
+          : ""
+      }
+    `;
+  }
+
+  function renderAttachments(project) {
+    const attachmentsBlock = document.getElementById("attachments-block");
+    attachmentsBlock.innerHTML = `
+      ${
+        isMember()
+          ? `
+        <form class="stack-form" onsubmit="createAttachment(event)">
+          <label>Attachment name</label>
+          <input id="attachment-name" type="text" placeholder="Design brief" required />
+          <label>Format</label>
+          <select id="attachment-format" required>
+            <option value="png">png</option>
+            <option value="jpg">jpg</option>
+            <option value="pdf">pdf</option>
+            <option value="txt">txt</option>
+          </select>
+          <label>Optional link</label>
+          <input id="attachment-link" type="url" placeholder="https://..." />
+          <button class="btn" type="submit">Add attachment</button>
+        </form>
+        `
+          : ""
+      }
+
+      <div class="stack-list">
+        ${
+          project.attachments.length
+            ? project.attachments
+                .map(
+                  (attachment) => `
+            <div class="subcard">
+              <div class="subcard-head">
+                <div>
+                  <strong>${escapeHtml(attachment.name)}</strong>
+                  <p>${escapeHtml(attachment.format.toUpperCase())} · ${escapeHtml(attachment.uploadedBy?.name || "Unknown")}</p>
+                </div>
+                ${
+                  attachment.link
+                    ? `<a class="btn-outline" href="${escapeHtml(attachment.link)}" target="_blank" rel="noreferrer">Open</a>`
+                    : ""
+                }
+              </div>
+              ${
+                isProjectAdmin() || attachment.uploadedById === currentUserId
+                  ? `<button class="btn-danger-small" onclick="deleteAttachment(${attachment.id})">Delete</button>`
+                  : ""
+              }
+            </div>
+          `,
+                )
+                .join("")
+            : '<p class="empty-note">No attachments yet.</p>'
+        }
+      </div>
+    `;
+  }
+
+  function renderThreads(project) {
+    const threadsBlock = document.getElementById("threads-block");
+    threadsBlock.innerHTML = `
+      ${
+        isProjectAdmin()
+          ? `
+        <form class="stack-form" onsubmit="createThread(event)">
+          <label>Thread title</label>
+          <input id="thread-title" type="text" placeholder="Weekly standup" required />
+          <label>Opening message</label>
+          <textarea id="thread-content" placeholder="What should everyone discuss?" required></textarea>
+          <button class="btn" type="submit">Create thread</button>
+        </form>
+        `
+          : ""
+      }
+
+      <div class="stack-list">
+        ${
+          project.threads.length
+            ? project.threads
+                .map(
+                  (thread) => `
+            <div class="thread-card">
+              <div class="subcard-head">
+                <div>
+                  <strong>${escapeHtml(thread.title)}</strong>
+                  <p>Started by ${escapeHtml(thread.createdBy?.name || "Unknown")}</p>
+                </div>
+                ${
+                  isProjectAdmin()
+                    ? `
+                  <div class="inline-actions">
+                    <button class="btn-outline" onclick="editThread(${thread.id})">Edit</button>
+                    <button class="btn-danger" onclick="deleteThread(${thread.id})">Delete</button>
+                  </div>
+                  `
+                    : ""
+                }
+              </div>
+
+              <p class="thread-body">${toLines(thread.content)}</p>
+
+              <div class="messages-area">
+                <h3>Messages</h3>
+                <div class="stack-list">
+                  ${
+                    thread.messages.length
+                      ? thread.messages
+                          .map(
+                            (message) => `
+                      <div class="message-card">
+                        <div class="subcard-head">
+                          <div>
+                            <strong>${escapeHtml(message.createdBy?.name || "Unknown")}</strong>
+                            <p>${new Date(message.createdAt).toLocaleString()}</p>
+                          </div>
+                          ${
+                            message.createdById === currentUserId || isProjectAdmin()
+                              ? `
+                            <div class="inline-actions">
+                              <button class="btn-outline" onclick="editMessage(${thread.id}, ${message.id})">Edit</button>
+                              <button class="btn-danger" onclick="deleteMessage(${thread.id}, ${message.id})">Delete</button>
+                            </div>
+                            `
+                              : ""
+                          }
+                        </div>
+                        <p class="thread-body">${toLines(message.content)}</p>
+                      </div>
+                    `,
+                          )
+                          .join("")
+                      : '<p class="empty-note">No messages yet.</p>'
+                  }
+                </div>
+
+                ${
+                  isMember()
+                    ? `
+                <form class="stack-form compact-form" onsubmit="createMessage(event, ${thread.id})">
+                  <label>Add a message</label>
+                  <textarea id="message-content-${thread.id}" placeholder="Share an update..." required></textarea>
+                  <button class="btn-outline" type="submit">Post message</button>
+                </form>
+                `
+                    : ""
+                }
+              </div>
+            </div>
+          `,
+                )
+                .join("")
+            : '<p class="empty-note">No threads yet.</p>'
+        }
+      </div>
+    `;
+  }
+
+  async function loadProject() {
+    hideError();
+    const res = await fetch(`/api/projects/${projectId}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      showError(data.error || "Unable to load project.");
+      return;
+    }
+
+    projectState = data;
+    renderProject(data);
+  }
+
+  async function deleteProject() {
+    if (!confirm("Delete this project and everything inside it?")) return;
+
+    const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
+    if (res.ok) {
+      window.location.href = "/projects";
+      return;
+    }
+
+    const data = await res.json();
+    alert(data.error || "Unable to delete project.");
+  }
+
+  async function addMember(event) {
+    event.preventDefault();
+    const email = document.getElementById("member-email").value;
+
+    const res = await fetch(`/api/projects/${projectId}/members`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || "Unable to add member.");
+      return;
+    }
+
+    event.target.reset();
+    loadProject();
+  }
+
+  async function removeMember(userId) {
+    if (!confirm("Remove this member from the project?")) return;
+
+    const res = await fetch(`/api/projects/${projectId}/members/${userId}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || "Unable to remove member.");
+      return;
+    }
+
+    loadProject();
+  }
+
+  async function createAttachment(event) {
+    event.preventDefault();
+    const name = document.getElementById("attachment-name").value;
+    const format = document.getElementById("attachment-format").value;
+    const link = document.getElementById("attachment-link").value;
+
+    const res = await fetch(`/api/projects/${projectId}/attachments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, format, link }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || "Unable to add attachment.");
+      return;
+    }
+
+    event.target.reset();
+    loadProject();
+  }
+
+  async function deleteAttachment(attachmentId) {
+    if (!confirm("Delete this attachment?")) return;
+
+    const res = await fetch(`/api/projects/${projectId}/attachments/${attachmentId}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || "Unable to delete attachment.");
+      return;
+    }
+
+    loadProject();
+  }
+
+  async function createThread(event) {
+    event.preventDefault();
+    const title = document.getElementById("thread-title").value;
+    const content = document.getElementById("thread-content").value;
+
+    const res = await fetch(`/api/projects/${projectId}/threads`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, content }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || "Unable to create thread.");
+      return;
+    }
+
+    event.target.reset();
+    loadProject();
+  }
+
+  async function editThread(threadId) {
+    const thread = projectState.threads.find((entry) => entry.id === threadId);
+    const title = prompt("Thread title", thread?.title || "");
+    if (title === null) return;
+    const content = prompt("Thread content", thread?.content || "");
+    if (content === null) return;
+
+    const res = await fetch(`/api/projects/${projectId}/threads/${threadId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, content }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || "Unable to edit thread.");
+      return;
+    }
+
+    loadProject();
+  }
+
+  async function deleteThread(threadId) {
+    if (!confirm("Delete this thread and all of its messages?")) return;
+
+    const res = await fetch(`/api/projects/${projectId}/threads/${threadId}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || "Unable to delete thread.");
+      return;
+    }
+
+    loadProject();
+  }
+
+  async function createMessage(event, threadId) {
+    event.preventDefault();
+    const content = document.getElementById(`message-content-${threadId}`).value;
+
+    const res = await fetch(`/api/projects/${projectId}/threads/${threadId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || "Unable to post message.");
+      return;
+    }
+
+    event.target.reset();
+    loadProject();
+  }
+
+  async function editMessage(threadId, messageId) {
+    const thread = projectState.threads.find((entry) => entry.id === threadId);
+    const message = thread?.messages.find((entry) => entry.id === messageId);
+    const content = prompt("Message", message?.content || "");
+    if (content === null) return;
+
+    const res = await fetch(`/api/projects/${projectId}/threads/${threadId}/messages/${messageId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || "Unable to edit message.");
+      return;
+    }
+
+    loadProject();
+  }
+
+  async function deleteMessage(threadId, messageId) {
+    if (!confirm("Delete this message?")) return;
+
+    const res = await fetch(`/api/projects/${projectId}/threads/${threadId}/messages/${messageId}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      alert(data.error || "Unable to delete message.");
+      return;
+    }
+
+    loadProject();
+  }
+
+  loadProject();
+</script>
+</body>
+</html>
