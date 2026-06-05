@@ -1,3 +1,5 @@
+const fs = require("fs/promises");
+const path = require("path");
 const Project = require("../models/Project.js");
 const Attachment = require("../models/Attachment.js");
 const Thread = require("../models/Thread.js");
@@ -200,19 +202,40 @@ const createAttachment = async (req, res) => {
       return res.status(403).json({ error: "You do not have access to this project" });
     }
 
-    const { name, format, link } = req.body;
-    if (!name || !format) {
-      return res.status(400).json({ error: "Name and format are required" });
+    const uploadedFile = req.file;
+    const { name, format, link } = req.body || {};
+    const supportedFormats = ["png", "jpg", "jpeg", "pdf", "txt"];
+
+    const resolvedFormat = uploadedFile
+      ? path.extname(uploadedFile.originalname).replace(".", "").toLowerCase()
+      : (format || "").toLowerCase();
+    const resolvedName = name || (uploadedFile ? path.parse(uploadedFile.originalname).name : "");
+    const resolvedLink = uploadedFile ? `/uploads/${uploadedFile.filename}` : link || null;
+
+    if (!resolvedName) {
+      return res.status(400).json({ error: "Name is required" });
     }
 
-    const supportedFormats = ["png", "jpg", "pdf", "txt"];
-    if (!supportedFormats.includes(format.toLowerCase())) {
-      return res.status(400).json({ error: "Format must be png, jpg, pdf, or txt" });
+    if (!resolvedFormat || !supportedFormats.includes(resolvedFormat)) {
+      return res.status(400).json({ error: "Format must be png, jpg, jpeg, pdf, or txt" });
     }
 
-    const attachment = await Attachment.createAttachment(projectId, userId, name, format, link);
+    if (!uploadedFile && !resolvedLink) {
+      return res.status(400).json({ error: "Please upload a file or provide a link" });
+    }
+
+    const attachment = await Attachment.createAttachment(
+      projectId,
+      userId,
+      resolvedName,
+      resolvedFormat === "jpeg" ? "jpg" : resolvedFormat,
+      resolvedLink,
+    );
     res.status(201).json(attachment);
   } catch (err) {
+    if (req.file) {
+      await fs.unlink(req.file.path).catch(() => {});
+    }
     res.status(500).json({ error: err.message });
   }
 };
@@ -239,6 +262,11 @@ const deleteAttachment = async (req, res) => {
     const isAdmin = await Project.isProjectAdmin(projectId, userId);
     if (attachment.uploadedById !== parseInt(userId) && !isAdmin) {
       return res.status(403).json({ error: "You do not have permission to delete this attachment" });
+    }
+
+    if (attachment.link && attachment.link.startsWith("/uploads/")) {
+      const filePath = path.resolve(process.cwd(), "uploads", path.basename(attachment.link));
+      await fs.unlink(filePath).catch(() => {});
     }
 
     await Attachment.deleteAttachment(attachmentId);

@@ -1,5 +1,6 @@
 const express = require('express')
 const router = express.Router()
+const fs = require('fs/promises')
 
 const {
   createProject,
@@ -20,6 +21,21 @@ const {
   deleteMessage,
 } = require('../controllers/projectController')
 const auth = require('../middleware/auth.js')
+const { upload } = require('../config/upload.js')
+
+const handleAttachmentUpload = (req, res, next) => {
+  upload.single('file')(req, res, async (err) => {
+    if (err) {
+      if (req.file) {
+        await fs.unlink(req.file.path).catch(() => {});
+      }
+
+      return res.status(400).json({ error: err.message });
+    }
+
+    next();
+  });
+};
 
 router.post('/', auth, createProject)
 router.get('/', auth, getAllProjects)
@@ -29,7 +45,7 @@ router.delete('/:id', auth, deleteProject)
 router.get('/:id/users', auth, listProjectUsers)
 router.post('/:id/members', auth, addMember)
 router.delete('/:id/members/:userId', auth, removeMember)
-router.post('/:id/attachments', auth, createAttachment)
+router.post('/:id/attachments', auth, handleAttachmentUpload, createAttachment)
 router.delete('/:id/attachments/:attachmentId', auth, deleteAttachment)
 router.post('/:id/threads', auth, createThread)
 router.put('/:id/threads/:threadId', auth, updateThread)

@@ -55,6 +55,24 @@ The server runs on `http://localhost:3000`
 - `GET /projects/:id` — get a project by id
 - `PUT /projects/:id` — update a project
 - `DELETE /projects/:id` — delete a project
+- `GET /projects/:id/users` — list project members and owner
+- `POST /projects/:id/members` — add a member by email or user id
+- `DELETE /projects/:id/members/:userId` — remove a member
+
+**Collaboration endpoints:**
+- `POST /projects/:id/attachments` — upload a local file or attach a link
+- `DELETE /projects/:id/attachments/:attachmentId` — delete an attachment
+- `POST /projects/:id/threads` — create a thread
+- `PUT /projects/:id/threads/:threadId` — edit a thread
+- `DELETE /projects/:id/threads/:threadId` — delete a thread
+- `POST /projects/:id/threads/:threadId/messages` — post a message
+- `PUT /projects/:id/threads/:threadId/messages/:messageId` — edit a message
+- `DELETE /projects/:id/threads/:threadId/messages/:messageId` — delete a message
+
+**Local uploads**
+- Uploaded files are stored in the `/uploads` folder and served at `/uploads/...`
+- Supported upload formats: `png`, `jpg`, `jpeg`, `pdf`, `txt`
+- Uploads are tied to the project attachment list and can be removed from the project page
 
 - run `prisma/seed.js` or `npm run seed` to create an admin user (admin@test.com : admin123) or manually register a user, then in psql:
 ```

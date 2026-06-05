@@ -170,15 +170,8 @@
         <form class="stack-form" onsubmit="createAttachment(event)">
           <label>Attachment name</label>
           <input id="attachment-name" type="text" placeholder="Design brief" required />
-          <label>Format</label>
-          <select id="attachment-format" required>
-            <option value="png">png</option>
-            <option value="jpg">jpg</option>
-            <option value="pdf">pdf</option>
-            <option value="txt">txt</option>
-          </select>
-          <label>Optional link</label>
-          <input id="attachment-link" type="url" placeholder="https://..." />
+          <label>File</label>
+          <input id="attachment-file" type="file" accept=".png,.jpg,.jpeg,.pdf,.txt" required />
           <button class="btn" type="submit">Add attachment</button>
         </form>
         `
@@ -383,13 +376,21 @@
   async function createAttachment(event) {
     event.preventDefault();
     const name = document.getElementById("attachment-name").value;
-    const format = document.getElementById("attachment-format").value;
-    const link = document.getElementById("attachment-link").value;
+    const fileInput = document.getElementById("attachment-file");
+    const file = fileInput.files[0];
+
+    if (!file) {
+      alert("Please choose a file to upload.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("file", file);
 
     const res = await fetch(`/api/projects/${projectId}/attachments`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, format, link }),
+      body: formData,
     });
 
     if (!res.ok) {
